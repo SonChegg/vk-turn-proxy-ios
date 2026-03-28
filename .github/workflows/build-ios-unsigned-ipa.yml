@@ -8,6 +8,9 @@ on:
       - "ios/**"
       - ".github/workflows/build-ios-unsigned-ipa.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-latest
@@ -51,3 +54,40 @@ jobs:
             ios/Frameworks
             ios/build/unsigned
           if-no-files-found: warn
+
+      - name: Publish unsigned IPA to build-artifacts branch
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ARTIFACT_DIR="$(mktemp -d)"
+          cp "ios/build/unsigned/VkTurnProxyIOS-unsigned.ipa" "${ARTIFACT_DIR}/VkTurnProxyIOS-unsigned.ipa"
+          shasum -a 256 "${ARTIFACT_DIR}/VkTurnProxyIOS-unsigned.ipa" > "${ARTIFACT_DIR}/VkTurnProxyIOS-unsigned.ipa.sha256.txt"
+          printf '%s\n' "${GITHUB_SHA}" > "${ARTIFACT_DIR}/source-commit.txt"
+          printf '%s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "${ARTIFACT_DIR}/built-at-utc.txt"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin build-artifacts; then
+            git fetch origin build-artifacts:build-artifacts
+            git checkout build-artifacts
+          else
+            git checkout --orphan build-artifacts
+          fi
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name . \
+            -exec rm -rf {} +
+
+          mkdir -p unsigned/latest
+          cp "${ARTIFACT_DIR}/VkTurnProxyIOS-unsigned.ipa" "unsigned/latest/VkTurnProxyIOS-unsigned.ipa"
+          cp "${ARTIFACT_DIR}/VkTurnProxyIOS-unsigned.ipa.sha256.txt" "unsigned/latest/VkTurnProxyIOS-unsigned.ipa.sha256.txt"
+          cp "${ARTIFACT_DIR}/source-commit.txt" "unsigned/latest/source-commit.txt"
+          cp "${ARTIFACT_DIR}/built-at-utc.txt" "unsigned/latest/built-at-utc.txt"
+
+          git add unsigned/latest
+          git commit -m "Publish unsigned IPA for ${GITHUB_SHA}" || echo "No artifact changes to commit"
+          git push --force origin HEAD:build-artifacts
