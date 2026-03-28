@@ -1,0 +1,9 @@
+ios/VkTurnProxyIOS.xcodeproj/
+ios/build/
+ios/*.xcworkspace/
+ios/.xcodegen/
+ios/DerivedData/
+ios/Frameworks/VkTurnCore.xcframework/
+.tools/
+**/*.xcuserstate
+**/xcuserdata/
