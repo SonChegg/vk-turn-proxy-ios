@@ -1,0 +1,39 @@
+macos_instance:
+  image: ghcr.io/cirruslabs/macos-runner:sonoma
+
+build_unsigned_ipa_task:
+  timeout_in: 60m
+  env:
+    HOMEBREW_NO_AUTO_UPDATE: "1"
+
+  show_versions_script: |
+    set -euo pipefail
+    sw_vers
+    xcodebuild -version
+
+  ensure_go_script: |
+    set -euo pipefail
+    if ! command -v go >/dev/null 2>&1; then
+      brew install go
+    fi
+    go version
+
+  prepare_project_script: |
+    set -euo pipefail
+    cd ios
+    ./scripts/prepare-macos-build.sh
+
+  build_unsigned_ipa_script: |
+    set -euo pipefail
+    cd ios
+    ./scripts/build-unsigned-ipa.sh
+
+  ipa_artifacts:
+    path: "ios/build/unsigned/VkTurnProxyIOS-unsigned.ipa"
+
+  always:
+    support_artifacts:
+      paths:
+        - "ios/build/unsigned/**"
+        - "ios/VkTurnProxyIOS.xcodeproj/**"
+        - "ios/Frameworks/**"
