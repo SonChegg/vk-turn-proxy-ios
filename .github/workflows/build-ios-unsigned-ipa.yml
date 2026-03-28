@@ -20,6 +20,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Publish running status to build-status branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STATUS_DIR="$(mktemp -d)"
+          printf 'running\n' > "${STATUS_DIR}/state.txt"
+          printf '%s\n' "${GITHUB_SHA}" > "${STATUS_DIR}/source-commit.txt"
+          printf '%s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "${STATUS_DIR}/updated-at-utc.txt"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin build-status; then
+            git fetch origin build-status:build-status
+            git checkout build-status
+          else
+            git checkout --orphan build-status
+          fi
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name . \
+            -exec rm -rf {} +
+
+          mkdir -p status/latest
+          cp "${STATUS_DIR}/state.txt" "status/latest/state.txt"
+          cp "${STATUS_DIR}/source-commit.txt" "status/latest/source-commit.txt"
+          cp "${STATUS_DIR}/updated-at-utc.txt" "status/latest/updated-at-utc.txt"
+
+          git add status/latest
+          git commit -m "Set build status to running for ${GITHUB_SHA}" || echo "No status changes to commit"
+          git push --force origin HEAD:build-status
+          git checkout "${GITHUB_SHA}"
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -91,3 +126,73 @@ jobs:
           git add unsigned/latest
           git commit -m "Publish unsigned IPA for ${GITHUB_SHA}" || echo "No artifact changes to commit"
           git push --force origin HEAD:build-artifacts
+
+      - name: Publish success status to build-status branch
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STATUS_DIR="$(mktemp -d)"
+          printf 'success\n' > "${STATUS_DIR}/state.txt"
+          printf '%s\n' "${GITHUB_SHA}" > "${STATUS_DIR}/source-commit.txt"
+          printf '%s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "${STATUS_DIR}/updated-at-utc.txt"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin build-status; then
+            git fetch origin build-status:build-status
+            git checkout build-status
+          else
+            git checkout --orphan build-status
+          fi
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name . \
+            -exec rm -rf {} +
+
+          mkdir -p status/latest
+          cp "${STATUS_DIR}/state.txt" "status/latest/state.txt"
+          cp "${STATUS_DIR}/source-commit.txt" "status/latest/source-commit.txt"
+          cp "${STATUS_DIR}/updated-at-utc.txt" "status/latest/updated-at-utc.txt"
+
+          git add status/latest
+          git commit -m "Set build status to success for ${GITHUB_SHA}" || echo "No status changes to commit"
+          git push --force origin HEAD:build-status
+
+      - name: Publish failure status to build-status branch
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STATUS_DIR="$(mktemp -d)"
+          printf 'failed\n' > "${STATUS_DIR}/state.txt"
+          printf '%s\n' "${GITHUB_SHA}" > "${STATUS_DIR}/source-commit.txt"
+          printf '%s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "${STATUS_DIR}/updated-at-utc.txt"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin build-status; then
+            git fetch origin build-status:build-status
+            git checkout build-status
+          else
+            git checkout --orphan build-status
+          fi
+
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name . \
+            -exec rm -rf {} +
+
+          mkdir -p status/latest
+          cp "${STATUS_DIR}/state.txt" "status/latest/state.txt"
+          cp "${STATUS_DIR}/source-commit.txt" "status/latest/source-commit.txt"
+          cp "${STATUS_DIR}/updated-at-utc.txt" "status/latest/updated-at-utc.txt"
+
+          git add status/latest
+          git commit -m "Set build status to failed for ${GITHUB_SHA}" || echo "No status changes to commit"
+          git push --force origin HEAD:build-status
