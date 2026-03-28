@@ -1,6 +1,7 @@
 name: build-ios-unsigned-ipa
 
 on:
+  # Keep manual dispatch enabled in addition to path-based push triggers.
   workflow_dispatch:
   push:
     paths:
