@@ -1,0 +1,34 @@
+name: VkTurnProxyIOS
+options:
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.cheburnet.vkturnproxyios
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: 5.9
+targets:
+  VkTurnProxyIOS:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - framework: Frameworks/VkTurnCore.xcframework
+        embed: true
+        codeSign: true
+    info:
+      path: App/Info.plist
+    settings:
+      base:
+        PRODUCT_NAME: VkTurnProxyIOS
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(PROJECT_DIR)/Frameworks
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - @executable_path/Frameworks

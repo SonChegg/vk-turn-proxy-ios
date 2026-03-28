@@ -1,0 +1,53 @@
+name: build-ios-unsigned-ipa
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "bridge/**"
+      - "ios/**"
+      - ".github/workflows/build-ios-unsigned-ipa.yml"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: bridge/go.mod
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+        working-directory: ./ios
+
+      - name: Prepare iOS project
+        run: ./scripts/prepare-macos-build.sh
+        working-directory: ./ios
+
+      - name: Build unsigned IPA
+        run: ./scripts/build-unsigned-ipa.sh
+        working-directory: ./ios
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VkTurnProxyIOS-unsigned-ipa
+          path: ios/build/unsigned/VkTurnProxyIOS-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build logs and project outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VkTurnProxyIOS-build-support
+          path: |
+            ios/VkTurnProxyIOS.xcodeproj
+            ios/Frameworks
+            ios/build/unsigned
+          if-no-files-found: warn
