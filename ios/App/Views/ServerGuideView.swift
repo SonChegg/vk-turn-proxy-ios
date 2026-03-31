@@ -75,7 +75,7 @@ Listen: 127.0.0.1:9000
 
             if let code {
                 Text(code)
-                    .fbame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.system(.footnote, design: .monospaced))
                     .foregroundStyle(Color.green.opacity(0.95))
                     .padding(12)

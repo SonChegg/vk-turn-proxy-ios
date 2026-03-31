@@ -7,3 +7,9 @@ ios/Frameworks/VkTurnCore.xcframework/
 .tools/
 **/*.xcuserstate
 **/xcuserdata/
+expo-app/node_modules/
+expo-app/.expo/
+expo-app/dist/
+expo-app/android/
+expo-app/ios/
+expo-app/modules/vk-turn-core/ios/Frameworks/VkTurnCore.xcframework/

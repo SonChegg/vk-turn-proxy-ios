@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "VK TURN Proxy Expo",
+    "slug": "vk-turn-proxy-expo",
+    "scheme": "vkturnproxyexpo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cheburnet.vkturnproxyexpo"
+    },
+    "plugins": [
+      [
+        "expo-dev-client",
+        {
+          "launchMode": "most-recent"
+        }
+      ]
+    ]
+  }
+}

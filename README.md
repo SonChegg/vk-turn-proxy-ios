@@ -10,6 +10,7 @@
 
 - `bridge/` — Go mobile bridge с API `start/stop/isRunning/drainLogs`
 - `ios/` — SwiftUI-клиент, повторяющий основной сценарий Android-версии
+- `expo-app/` — Expo development build с React Native UI и кастомным iOS Expo module
 - `ios/scripts/prepare-macos-build.sh` — подготовка Mac-сборки в одну команду
 - `ios/scripts/archive-ios-app.sh` — `archive` и опциональный экспорт `ipa`
 - `ios/scripts/build-unsigned-ipa.sh` — сборка `unsigned ipa` для AltStore
@@ -20,6 +21,7 @@
 
 - отдельная папка проекта
 - SwiftUI-интерфейс с guided-режимом и raw-режимом
+- Expo development build с тем же сценарием запуска и локальным native bridge
 - сохранение настроек в `UserDefaults`
 - лог-экран и старт/стоп proxy runtime
 - Go bridge под `gomobile`
@@ -33,6 +35,52 @@
 - В этой среде нет `swift`, `go`, `xcodebuild` и Xcode, поэтому локально собрать и проверить iOS-приложение здесь нельзя.
 - По этой же причине проект подготовлен как исходники + скрипты сборки под macOS.
 - На iOS нет прямого аналога Android-исключения приложения из WireGuard. Поэтому самый безопасный стартовый сценарий для этой версии — split-tunnel конфиг WireGuard с endpoint `127.0.0.1:9000` и `MTU = 1280`.
+- `Expo Go` не подходит для этого кейса, потому что реальный proxy runtime живет в кастомном native iOS module. Для Expo-версии нужен именно development build.
+
+## Техническая реальность
+
+Этот проект делает не "магическую генерацию TURN-пароля из ссылки", а более приземленный сценарий:
+
+- TURN-учетные данные для VK и Telemost не вычисляются локально, а запрашиваются через их API по invite-link.
+- Трафик по умолчанию действительно оборачивается в DTLS 1.2 перед отправкой через TURN, но в текущей реализации используется self-signed certificate и `InsecureSkipVerify`.
+- Для VK по умолчанию поднимается несколько параллельных соединений, обычно `16`, а для Yandex по умолчанию одно.
+- Текущая iOS-версия не является полноценным `PacketTunnelProvider`/`NetworkExtension`. Это обычное приложение с локальным runtime, которое лучше рассматривать как foreground-клиент и экспериментальную iPhone-реализацию.
+
+Из этого следует важный практический вывод:
+
+- как transport-идея для Android/desktop и серверной стороны схема выглядит рабочей;
+- как надежный системный iPhone tunnel проект пока нельзя считать завершенным продуктом;
+- работоспособность зависит от того, не изменились ли upstream API VK Calls и Yandex Telemost.
+
+## Expo Development Build
+
+В репозиторий добавлен новый путь `expo-app/`, который переносит интерфейс на React Native / Expo, но сохраняет локальный Go runtime через custom Expo module.
+
+Что внутри Expo-версии:
+- React Native UI вместо SwiftUI
+- локальное хранение настроек через AsyncStorage
+- тот же guided/raw режим конфигурации
+- Expo module `vk-turn-core`, который вызывает `VkTurnCore.xcframework` на iOS
+
+Быстрый запуск на macOS:
+
+```bash
+cd expo-app
+npm install
+npm run prepare:ios
+npx expo run:ios --device
+```
+
+Что делает `npm run prepare:ios`:
+- собирает `VkTurnCore.xcframework` через `bridge/scripts/build-ios-framework.sh`
+- копирует framework в локальный Expo module
+- запускает `expo prebuild` для iOS
+- ставит CocoaPods
+
+Важно:
+- Это development build, а не обычный `Expo Go`.
+- Для установки на iPhone все равно нужен Mac с Xcode.
+- Если хочешь `.ipa`, собирай уже сгенерированный Expo iOS project через Xcode Organizer или `eas build`.
 
 ## Без своего Мака
 
@@ -144,6 +192,11 @@ vk-turn-proxy-ios/
 ├── bridge/
 │   ├── go.mod
 │   ├── proxycore/
+│   └── scripts/
+├── expo-app/
+│   ├── App.tsx
+│   ├── src/
+│   ├── modules/
 │   └── scripts/
 └── ios/
     ├── scripts/
